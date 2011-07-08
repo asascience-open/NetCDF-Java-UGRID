@@ -50,10 +50,10 @@ public class AppTest
     {
       CancelTask cancelTask = null;
       //String unstructured = "C:/Dev/Unstructured/ugrid/FVCOM/fvcom_delt.ncml";
-      //String unstructured = "C:/Dev/Unstructured/ugrid/ELCIRC/elcirc_delt.ncml";
+      String unstructured = "C:/Dev/Unstructured/ugrid/ELCIRC/elcirc_delt.ncml";
       //String unstructured = "C:/Dev/Unstructured/ugrid/ADCIRC/adcirc_delt.ncml";
       //String unstructured = "C:/Dev/Unstructured/ugrid/SELFE/selfe_delt.ncml";
-      String unstructured = "dods://testbedapps.sura.org/thredds/dodsC/ugrid/TestCases/ELCIRC/elcirc_delt.ncml";
+      //String unstructured = "dods://testbedapps.sura.org/thredds/dodsC/ugrid/TestCases/ELCIRC/elcirc_delt.ncml";
       try {
         UGridDataset ugrid = (UGridDataset) FeatureDatasetFactoryManager.open(FeatureType.UGRID, unstructured, cancelTask, new Formatter());
         long startTime;
@@ -69,6 +69,8 @@ public class AppTest
           System.out.println("RTree build took: " + (double) (endTime - startTime) / 1000 + " seconds.");
           System.out.println("RTree contains: " + m.getTreeSize() + " entries.");
 
+          /*
+           * Skip the point extraction
           if (m.getTreeSize() > 0) {
             // Query a random point within the bounding box of the Mesh
             LatLonRect bounds = m.getLatLonBoundingBox();
@@ -94,44 +96,66 @@ public class AppTest
             for (Entity e : cell.getEntities()) {
               System.out.println(e.getClass().getSimpleName() + ": " + e.getGeoPoint().getLatitude() + "," + e.getGeoPoint().getLongitude());
             }
-
             for (UGridDatatype v : ms.getMeshVariables()) {
               v = (MeshVariable) v;
               // Extract value for each variable at the query point
               System.out.print(v.getName() + ": ");
               System.out.print(v.readPointData(query_point));
               System.out.println();
-              //System.out.println(m.extractDataPoints(v).size());
-
+              System.out.println(m.extractDataPoints(v).size());
             }
           }
+           */
 
-          // Subset
+          /*
+           * This is what we are subsetting
+           * 
+          ul-------------
+          |xxxxxx|      |
+          |xxxxxx|      |
+          ---------------
+          |      |      |
+          |      |      |
+          --------------lr
+           */
+          /* 
+           * Skip the variable only subsetting
           if (m.getSize() > 0) {
-            /*
-             * This is what we are subsetting
-             * 
-            ur--------------
-            |xxxxxx|      |
-            |xxxxxx|      |
-            ---------------
-            |      |      |
-            |      |      |
-            --------------lr
-             */
+
             LatLonRect bounds = m.getLatLonBoundingBox();
             LatLonRectangle2D rect = new LatLonRectangle2D(bounds.getUpperLeftPoint().getLatitude(), bounds.getUpperLeftPoint().getLongitude(), bounds.getLowerRightPoint().getLatitude(), bounds.getLowerRightPoint().getLongitude());
             LatLonRectangle2D rect2 = new LatLonRectangle2D(new LatLonPoint2D.Double(rect.getUpperLeftPoint().getLatitude(), rect.getUpperLeftPoint().getLongitude()), new LatLonPoint2D.Double(rect.getCenterLatitude(), rect.getCenterLongitude()));
             LatLonRect h = rect2.toLatLonRect();
             System.out.println("Subsetting the top left corner of bounding box...");
-            UGridDataset ug2 = ((MeshVariable) ms.getMeshVariableByName("zeta")).subset(h);
+            
+            // Subset the first variable into a new UGridDataset (all in memory)
+            Mesh m2;
+            UGridDataset ug2 = ((MeshVariable) ms.getMeshVariables().get(0)).subsetToDataset(h);
             for (Meshset ms2 : ug2.getMeshsets()) {
-              Mesh m2 = ms2.getMesh();
+              m2 = ms2.getMesh();
               m2.buildRTree();
               System.out.println(m2.toString());
             }
           }
+          */
         }
+        
+        // Subset the entire UGridDataset
+        System.out.println("Subsetting the entire UGridDataset bounding box...");
+        Mesh m3 = ugrid.getMeshsets().get(0).getMesh();
+        m3.buildRTree();
+        LatLonRect bounds = m3.getLatLonBoundingBox();
+        LatLonRectangle2D rect = new LatLonRectangle2D(bounds.getUpperLeftPoint().getLatitude(), bounds.getUpperLeftPoint().getLongitude(), bounds.getLowerRightPoint().getLatitude(), bounds.getLowerRightPoint().getLongitude());
+        LatLonRectangle2D rect2 = new LatLonRectangle2D(new LatLonPoint2D.Double(rect.getUpperLeftPoint().getLatitude(), rect.getUpperLeftPoint().getLongitude()), new LatLonPoint2D.Double(rect.getCenterLatitude(), rect.getCenterLongitude()));
+        LatLonRect h = rect2.toLatLonRect();
+        UGridDataset ug3 = ugrid.subset(h);
+        Mesh m4;
+        for (Meshset ms3 : ug3.getMeshsets()) {
+          m4 = ms3.getMesh();
+          m4.buildRTree();
+          System.out.println(m4.toString());
+        }
+        System.out.println("Done");
       } catch (IOException e) {
         System.out.println(e);
       }

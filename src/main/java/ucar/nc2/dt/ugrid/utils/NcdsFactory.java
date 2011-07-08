@@ -14,7 +14,7 @@ import ucar.nc2.dataset.NetcdfDataset;
  */
 public class NcdsFactory {
 
-  final static String RESOURCE_PATH = "/resources/netcdf/ncml/";
+  final static String RESOURCE_PATH = "/netcdf/ncml/";
 
   public enum NcdsTemplate {
 

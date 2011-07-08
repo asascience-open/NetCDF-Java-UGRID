@@ -32,6 +32,7 @@
  */
 package ucar.nc2.dt.ugrid;
 
+import java.io.FileNotFoundException;
 import ucar.nc2.dataset.*;
 import ucar.nc2.Attribute;
 import ucar.nc2.VariableSimpleIF;
@@ -45,7 +46,14 @@ import ucar.unidata.geoloc.LatLonRect;
 
 import java.util.*;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import ucar.nc2.Dimension;
 import ucar.nc2.constants.CF;
+import ucar.nc2.dt.ugrid.geom.LatLonPoint2D;
+import ucar.nc2.dt.ugrid.geom.LatLonPolygon2D;
+import ucar.nc2.dt.ugrid.geom.LatLonRectangle2D;
+import ucar.nc2.dt.ugrid.utils.NcdsFactory;
+import ucar.nc2.dt.ugrid.utils.NcdsFactory.NcdsTemplate;
 
 /**
  * Make a NetcdfDataset into a collection of GeoGrids with Georeferencing coordinate systems.
@@ -73,6 +81,9 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
   private NetcdfDataset ds;
   private ArrayList<MeshVariable> meshVariables = new ArrayList<MeshVariable>();
   private Map<String, Meshset> meshsetHash = new HashMap<String, Meshset>();
+  
+  // "Mesh" is defined by the standard_name "topology_description"
+  private static final String TOPOLOGY_VARIABLE = "topology_description";
   
   /**
    * Open a netcdf dataset, using NetcdfDataset.defaultEnhanceMode plus CoordSystems
@@ -127,8 +138,7 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
     List<Variable> vars = ds.getVariables();
     for (Variable var : vars) {
       // See how many "Mesh" are defined in the dataset
-      // "Mesh" is defined by the standard_name "topology_description"
-      if ((var.findAttributeIgnoreCase(CF.STANDARD_NAME)) != null && (var.findAttributeIgnoreCase(CF.STANDARD_NAME).getStringValue().equals("topology_description"))) {
+      if ((var.findAttributeIgnoreCase(CF.STANDARD_NAME)) != null && (var.findAttributeIgnoreCase(CF.STANDARD_NAME).getStringValue().equals(TOPOLOGY_VARIABLE))) {
         VariableEnhanced varDS = (VariableEnhanced) var;
         constructMeshVariable(ds, varDS, parseInfo);
       }
@@ -353,6 +363,54 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
 
   public List<ucar.nc2.dt.UGridDataset.Meshset> getMeshsets() {
     return new ArrayList<ucar.nc2.dt.UGridDataset.Meshset>(meshsetHash.values());
+  }
+
+  public UGridDataset subset(LatLonRect bounds) {
+    // Create a new subsat UGridDataset and return
+    try {
+      NetcdfDataset ncd = NcdsFactory.getNcdsFromTemplate(NcdsTemplate.UGRID);
+
+      for (Attribute a : this.getGlobalAttributes()){
+        ncd.addAttribute(null, a);
+      }
+      ncd.addAttribute(null, new Attribute("History", "Subset by NetCDF-Java Library; Translation date = " + new Date() + ";"));
+     
+      Mesh m4;
+      LatLonRectangle2D r = new LatLonRectangle2D(new LatLonPoint2D.Double(bounds.getUpperLeftPoint().getLatitude(), bounds.getUpperLeftPoint().getLongitude()), new LatLonPoint2D.Double(bounds.getLowerRightPoint().getLatitude(), bounds.getLowerRightPoint().getLongitude()));
+      LatLonPolygon2D p = new LatLonPolygon2D.Double(r);
+      List<Cell> containedCells;
+      for (ucar.nc2.dt.UGridDataset.Meshset ms3 : this.getMeshsets()) {
+        ncd.addVariable(null, ms3.getDescriptionVariable());
+        
+        m4 = ms3.getMesh();
+        m4.buildRTree();
+        containedCells = m4.getCellsInPolygon(p);
+           
+        /*
+         * Create the subsat ConnectivityVariable
+         */
+        m4.getConnectivityVariable().subsetToDataset(this, ncd, containedCells);
+        
+        /*
+         * MeshVariables which are on this Meshset
+         */
+        List<UGridDatatype> mvs = ms3.getMeshVariables();
+        for (UGridDatatype mv : mvs) {
+          ((MeshVariable)mv).subsetToDataset(this, ncd, containedCells);
+        }
+      }
+      
+      ncd.finish();
+      
+      return new UGridDataset(ncd);
+    } catch (URISyntaxException e) {
+      System.out.println(e);
+    } catch (FileNotFoundException e) {
+      System.out.println(e);
+    } catch (IOException e) {
+      System.out.println(e);
+    }
+    return null;
   }
 
   /**

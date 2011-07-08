@@ -35,7 +35,7 @@ package ucar.nc2.dt;
 import java.util.*;
 import ucar.nc2.dataset.VariableDS;
 import ucar.nc2.dt.ugrid.Mesh;
-import ucar.nc2.dt.ugrid.MeshVariable;
+import ucar.unidata.geoloc.LatLonRect;
 
 /**
  * A dataset containing Grid objects.
@@ -52,13 +52,15 @@ public interface UGridDataset extends ucar.nc2.dt.TypedDataset {
   public UGridDatatype getMeshVariableByName(String n);
 
   public List<Meshset> getMeshsets();
+  
+  public ucar.nc2.dt.ugrid.UGridDataset subset(LatLonRect r);
 
   public interface Meshset {
 
     /** Get list of UGridDatatype objects with same Meshset
      * @return list of UGridDatatype
      */
-    public List<UGridDatatype> getMeshVariables();
+    public List<ucar.nc2.dt.UGridDatatype> getMeshVariables();
 
     public UGridDatatype getMeshVariableByName(String n);
 

@@ -5,9 +5,9 @@
 package ucar.nc2.dt.ugrid;
 
 import cern.colt.list.IntArrayList;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -33,7 +33,15 @@ public class Mesh {
   private String name;
   private RTree rtree;
   private List<Cell> cells = new ArrayList<Cell>();
-  private ArrayList<VariableEnhanced> connectivity_variables = new ArrayList<VariableEnhanced>();
+  // A Mesh should only have one connectivity array!
+  private ConnectivityVariable connectivity_variable;
+  private List<String> locations;
+  private List<CoordinateSystem> coordinate_systems = new ArrayList<CoordinateSystem>();
+  
+  // Standards
+  private final static String LOCATIONS_ATTRIBUTE = "locations";
+  private final static String COORDINATES = "coordinates";
+  private final static String CONNECTIVITY = "connectivity";
 
   public Mesh(NetcdfDataset ds, VariableEnhanced v) {
     name = v.getName();
@@ -47,138 +55,46 @@ public class Mesh {
   }
 
   private void processConnectivityVariables(NetcdfDataset ncd, VariableEnhanced v) {
-    ArrayList<VariableEnhanced> foundConns;
-    connectivity_variables = null;
+    ArrayList<Attribute> foundCoords;
     Attribute att = null;
-    if (v.findAttributeIgnoreCase("locations") != null) {
-      String[] refs = v.findAttributeIgnoreCase("locations").getStringValue().split(" ");
-      foundConns = new ArrayList<VariableEnhanced>(refs.length);
+    if (v.findAttributeIgnoreCase(LOCATIONS_ATTRIBUTE) != null) {
+      String[] refs = v.findAttributeIgnoreCase(LOCATIONS_ATTRIBUTE).getStringValue().split(" ");
+      foundCoords = new ArrayList<Attribute>(refs.length);
+      locations = new ArrayList<String>(refs.length);
+      Attribute conn = null;
+      Variable connection_variable;
+      connectivity_variable = null;
       for (String prefix : refs) {
-        att = v.findAttributeIgnoreCase(prefix + "_coordinates");
-        Attribute conn = v.findAttributeIgnoreCase(prefix + "_connectivity");
-        Variable connection_variable;
-        if (att != null && conn != null && !att.getStringValue().equals("") && !conn.getStringValue().equals("")) {
+        att = v.findAttributeIgnoreCase(prefix + "_" + COORDINATES);
+        conn = v.findAttributeIgnoreCase(prefix + "_" + CONNECTIVITY);
+        if (att != null && conn != null && !att.getStringValue().isEmpty() && !conn.getStringValue().isEmpty()) {
           connection_variable = ncd.findVariable(conn.getStringValue());
-          foundConns.add((VariableEnhanced)connection_variable);
+          // Add support for "edge" cases where connectivity gives the edges,
+          // and there is another map to the nodes.
+          if (prefix.equalsIgnoreCase("node") && connectivity_variable == null) {
+            connectivity_variable = new ConnectivityVariable(connection_variable);
+          }
+          locations.add(prefix);
+          foundCoords.add(att);
         } else {
           System.out.println("Could not find coordinate and connectivity information for this Mesh.");
         }
       }
-      Set set = new HashSet(foundConns);
-      connectivity_variables = new ArrayList(set);
-      // A Mesh should only have one connectivity array referenced... right?
-      // If not, we may need to generate multiple rtrees.
-      constructCells(ncd, att, connectivity_variables.get(0));
+
+      String attString;
+      findCoord : for (Attribute attr : foundCoords) {
+        attString = attr.getStringValue().toLowerCase();
+        for (CoordinateSystem coord : ncd.getCoordinateSystems()) {
+          if (attString.contains(coord.getLatAxis().getShortName()) &&
+                  attString.contains(coord.getLonAxis().getShortName())) {
+            coordinate_systems.add(coord);
+            break;
+          }
+        }
+      }
+      cells = getConnectivityVariable().createCells(locations, coordinate_systems);
     } else {
       System.out.println("No 'locations' attribute on the Mesh.");
-    }
-  }
-
-  private void constructCells(NetcdfDataset ds, Attribute att, VariableEnhanced connectivity) {
-    for (CoordinateSystem coord : ds.getCoordinateSystems()) {
-      if (coord.getName().toLowerCase().contains(att.getStringValue().toLowerCase())) {
-        // Found the coordinate system
-        Attribute cell_type = connectivity.findAttributeIgnoreCase("cell_type");
-        if (cell_type != null && !cell_type.getStringValue().equals("")) {
-          // for future use of the cell_type attribute
-
-          int start_index;
-          if (connectivity.findAttributeIgnoreCase("index_origin") != null) {
-            start_index = connectivity.findAttributeIgnoreCase("index_origin").getNumericValue().intValue();
-          } else {
-            start_index = 0;
-            //System.out.println("Connectivity array " + connectivity.getName() + " assumed to start at index 0.");
-          }
-          if (connectivity.getDimensions().get(0).getLength() > connectivity.getDimensions().get(1).getLength()) {
-            //  [N0] [1,2,3]
-            //  [N1] [4,5,6]
-            //  [N2] [2,5,6]
-            //  [N3] [1,4,3]
-            processConnectivityArray(connectivity, start_index, coord);
-          } else {
-            //       N0  N1  N2  N3
-            //  --------------------
-            //       ̪   ̪   ̪   ̪
-            //  [0]  1   4   2   1
-            //  [1]  2   5   5   4
-            //  [2]  3   6   6   3
-            //       ̺   ̺   ̺   ̺
-            processConnectivityList(connectivity, start_index, coord);
-          }
-        } else {
-          System.out.println("cell_type was not specified on the "
-                  + "connectivity_array variable: " + cell_type.getName());
-        }
-        break;
-      }
-    }
-  }
-
-  private void processConnectivityList(VariableEnhanced connectivity, int start_index, CoordinateSystem coord) {
-    try {
-      Node node;
-      Cell cell;
-      int index;
-      ArrayList<Node> nodes = new ArrayList<Node>();
-      double[] llats = (double[]) coord.getLatAxis().read().get1DJavaArray(double.class);
-      double[] llons = (double[]) coord.getLonAxis().read().get1DJavaArray(double.class);
-
-      ArrayList<Node> unique_nodes = new ArrayList<Node>(llats.length);
-      int[][] conn_data = (int[][]) connectivity.read().copyToNDJavaArray();
-
-      for (int j = 0; j < llats.length; j++) {
-        node = new Node();
-        node.setDataIndex(j);
-        node.setGeoPoint(new LatLonPoint2D.Double(llats[j], llons[j]));
-        unique_nodes.add(node);
-      }
-      for (int i = 0; i < connectivity.getDimensions().get(1).getLength(); i++) {
-        cell = new Cell();
-        nodes.clear();
-        for (int k = 0; k < connectivity.getDimensions().get(0).getLength(); k++) {
-          index = conn_data[k][i] - start_index;
-          nodes.add(unique_nodes.get(index));
-        }
-        cell.setNodes((ArrayList<Node>) nodes.clone());
-        cells.add(cell);
-      }
-    } catch (IOException e) {
-      System.out.println(e);
-    }
-  }
-
-  private void processConnectivityArray(VariableEnhanced connectivity, int start_index, CoordinateSystem coord) {
-    try {
-      Node node;
-      Cell cell;
-      int index;
-      ArrayList<Node> nodes = new ArrayList<Node>();
-      double[] llats = (double[]) coord.getLatAxis().read().get1DJavaArray(double.class);
-      double[] llons = (double[]) coord.getLonAxis().read().get1DJavaArray(double.class);
-
-      ArrayList<Node> unique_nodes = new ArrayList<Node>(llats.length);
-      int[][] conn_data = (int[][]) connectivity.read().copyToNDJavaArray();
-
-      for (int j = 0; j < llats.length; j++) {
-        node = new Node();
-        node.setDataIndex(j);
-        node.setGeoPoint(new LatLonPoint2D.Double(llats[j], llons[j]));
-        unique_nodes.add(node);
-      }
-
-      for (int i = 0; i < connectivity.getDimensions().get(0).getLength(); i++) {
-        cell = new Cell();
-        nodes.clear();
-        for (int k = 0; k < connectivity.getDimensions().get(1).getLength(); k++) {
-          index = conn_data[i][k] - start_index;
-          nodes.add(unique_nodes.get(index));
-        }
-        cell.setNodes((ArrayList<Node>) nodes.clone());
-        cells.add(cell);
-      }
-
-    } catch (IOException e) {
-      System.out.println(e);
     }
   }
 
@@ -318,8 +234,8 @@ public class Mesh {
     return cells;
   }
 
-  public List<VariableEnhanced> getConnectivityVariables() {
-    return connectivity_variables;
+  public ConnectivityVariable getConnectivityVariable() {
+    return connectivity_variable;
   }
 
   public Mesh subset(LatLonRect bounds) {

@@ -19,6 +19,7 @@ public class Cell {
   private ArrayList<Node> nodes;
   private ArrayList<Edge> edges;
   private ArrayList<Face> faces;
+  private int connectivity_index;
   
 
   public Cell() {
@@ -41,6 +42,14 @@ public class Cell {
   public ArrayList<Entity> getEntities() {
     return entities;
   }
+  
+  public int[] getEntityIndexes() {
+    int[] r =  new int[entities.size()];
+    for (int i = 0 ; i < entities.size() ; i++) {
+      r[i] = entities.get(i).getDataIndex();
+    }
+    return r;
+  }
 
   public LatLonPolygon2D getPolygon() {
     return polygon;
@@ -61,6 +70,14 @@ public class Cell {
   public ArrayList<Node> getNodes() {
     return nodes;
   }
+  public int[] getNodeIndexes() {
+    int[] r =  new int[nodes.size()];
+    for (int i = 0 ; i < nodes.size() ; i++) {
+      r[i] = nodes.get(i).getDataIndex();
+    }
+    return r;
+  }
+  
   public void setNodes(ArrayList<Node> nodes) {
     this.nodes = nodes;
     this.setPolygon();
@@ -87,5 +104,8 @@ public class Cell {
     setEntities(faces);
   }
 
+  public void setConnectivityIndex(int connectivity_index) {
+    this.connectivity_index = connectivity_index;
+  }
 
 }
