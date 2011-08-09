@@ -26,7 +26,7 @@ import ucar.nc2.dt.ugrid.geom.LatLonPoint2D;
  */
 public class ConnectivityVariable {
   
-  private enum Type {WIDE,TALL}
+  private enum Type {WIDE,TALL};
   private final static String CELL_TYPE = "cell_type";
   private final static String INDEX_ORIGIN = "index_origin";
   
@@ -253,7 +253,7 @@ public class ConnectivityVariable {
 //    return news;
 //  }
   
-  private Variable getVariable() {
+  public Variable getVariable() {
     return variable;
   }
 
