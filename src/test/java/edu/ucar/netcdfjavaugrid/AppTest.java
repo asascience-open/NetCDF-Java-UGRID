@@ -5,21 +5,14 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import java.util.Formatter;
-import java.util.List;
 import ucar.nc2.constants.FeatureType;
 import ucar.nc2.dt.UGridDataset;
-import ucar.nc2.dt.ugrid.Cell;
-import ucar.nc2.dt.ugrid.Entity;
 import ucar.nc2.dt.ugrid.Mesh;
 import ucar.nc2.dt.UGridDataset.Meshset;
-import ucar.nc2.dt.UGridDatatype;
-import ucar.nc2.dt.ugrid.MeshVariable;
 import ucar.nc2.dt.ugrid.geom.LatLonPoint2D;
 import ucar.nc2.dt.ugrid.geom.LatLonRectangle2D;
 import ucar.nc2.ft.FeatureDatasetFactoryManager;
 import ucar.nc2.util.CancelTask;
-import ucar.unidata.geoloc.LatLonPoint;
-import ucar.unidata.geoloc.LatLonPointImpl;
 import ucar.unidata.geoloc.LatLonRect;
 
 /**
@@ -49,11 +42,7 @@ public class AppTest
     public void testApp()
     {
       CancelTask cancelTask = null;
-      //String unstructured = "C:/Dev/Unstructured/ugrid/FVCOM/fvcom_delt.ncml";
-      String unstructured = "C:/Dev/Unstructured/ugrid/ELCIRC/elcirc_delt.ncml";
-      //String unstructured = "C:/Dev/Unstructured/ugrid/ADCIRC/adcirc_delt.ncml";
-      //String unstructured = "C:/Dev/Unstructured/ugrid/SELFE/selfe_delt.ncml";
-      //String unstructured = "dods://testbedapps.sura.org/thredds/dodsC/ugrid/TestCases/ELCIRC/elcirc_delt.ncml";
+      String unstructured = "dods://testbedapps.sura.org/thredds/dodsC/ugrid/TestCases/ELCIRC/elcirc_delt.ncml";
       try {
         UGridDataset ugrid = (UGridDataset) FeatureDatasetFactoryManager.open(FeatureType.UGRID, unstructured, cancelTask, new Formatter());
         long startTime;
