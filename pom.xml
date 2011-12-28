@@ -2,7 +2,7 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>edu.ucar</groupId>
+  <groupId>com.asascience</groupId>
   <artifactId>NetCDF-Java-UGRID</artifactId>
   <version>0.1</version>
   <packaging>jar</packaging>
@@ -33,12 +33,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>${project.groupId}</groupId>
+      <groupId>edu.ucar</groupId>
       <artifactId>opendap</artifactId>
       <version>4.3.5-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>${project.groupId}</groupId>
+      <groupId>edu.ucar</groupId>
       <artifactId>netcdf</artifactId>
       <version>4.3.5-SNAPSHOT</version>
     </dependency>
