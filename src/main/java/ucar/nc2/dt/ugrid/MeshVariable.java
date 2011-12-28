@@ -60,15 +60,15 @@ public class MeshVariable implements UGridDatatype {
   }
 
   public String getName() {
-    return vs.getName();
+    return vs.getFullName();
+  }
+  
+  public String getNameEscaped() {
+    return vs.getFullNameEscaped();
   }
 
   public ConnectivityVariable getConnectivityVariable() {
     return (ConnectivityVariable) meshset.getMesh().getConnectivityVariable();
-  }
-
-  public String getNameEscaped() {
-    return vs.getNameEscaped();
   }
 
   public String getDescription() {
@@ -351,7 +351,7 @@ public class MeshVariable implements UGridDatatype {
 
           int count;
           // Lat
-          Variable newLat = ncd.findTopVariable(cs.getLatAxis().getShortName());
+          Variable newLat = ncd.findVariable(cs.getLatAxis().getFullNameEscaped());
           if (newLat == null) {
             newLat = new VariableDS(ugd.getNetcdfDataset(), null, null, cs.getLatAxis().getShortName(), cs.getLatAxis().getDataType(), cs.getLatAxis().getDimensionsString(), cs.getLatAxis().getUnitsString(), cs.getLatAxis().getDescription());
             for (Attribute a : (List<Attribute>) cs.getLatAxis().getAttributes()) {
@@ -371,7 +371,7 @@ public class MeshVariable implements UGridDatatype {
           ncd.finish();
 
           // Lon
-          Variable newLon = ncd.findTopVariable(cs.getLonAxis().getShortName());
+          Variable newLon = ncd.findVariable(cs.getLonAxis().getFullNameEscaped());
           if (newLon == null) {
             newLon = new VariableDS(ugd.getNetcdfDataset(), null, null, cs.getLonAxis().getShortName(), cs.getLonAxis().getDataType(), cs.getLonAxis().getDimensionsString(), cs.getLonAxis().getUnitsString(), cs.getLonAxis().getDescription());
             for (Attribute a : (List<Attribute>) cs.getLonAxis().getAttributes()) {
@@ -397,7 +397,7 @@ public class MeshVariable implements UGridDatatype {
        * Now add this actually MeshVariable, now that the file has 
        * been set up with the correct Dimensions.
        */
-      Variable newVar = ncd.findTopVariable(vs.getShortName());
+      Variable newVar = ncd.findVariable(vs.getFullName());
       if (newVar == null) {
         newVar = new VariableDS(ugd.getNetcdfDataset(), null, null, vs.getShortName(), vs.getDataType(), vs.getDimensionsString(), vs.getUnitsString(), vs.getDescription());
         for (Attribute a : (List<Attribute>) vs.getAttributes()) {
@@ -569,6 +569,6 @@ public class MeshVariable implements UGridDatatype {
   }
 
   public int compareTo(UGridDatatype g) {
-    return getName().compareTo(g.getName());
+    return getNameEscaped().compareTo(g.getNameEscaped());
   }
 }

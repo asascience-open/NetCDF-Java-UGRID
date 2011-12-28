@@ -39,6 +39,8 @@ import ucar.nc2.VariableSimpleIF;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import ucar.nc2.dt.UGridDatatype;
+import ucar.nc2.time.CalendarDate;
+import ucar.nc2.time.CalendarDateRange;
 import ucar.nc2.util.cache.FileCache;
 import ucar.nc2.constants.FeatureType;
 import ucar.nc2.units.DateRange;
@@ -288,7 +290,7 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
   }
 
   public VariableSimpleIF getDataVariable(String shortName) {
-    return ds.findTopVariable(shortName);
+    return ds.findVariable(shortName);
   }
 
   public NetcdfFile getNetcdfFile() {
@@ -411,6 +413,18 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
       System.out.println(e);
     }
     return null;
+  }
+
+  public CalendarDateRange getCalendarDateRange() {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  public CalendarDate getCalendarDateStart() {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  public CalendarDate getCalendarDateEnd() {
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 
   /**

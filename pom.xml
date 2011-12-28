@@ -27,11 +27,6 @@
       <version>1.2.0</version>
     </dependency>
     <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>netcdf</artifactId>
-      <version>4.2.22</version>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
       <version>1.6.1</version>
@@ -40,8 +35,17 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>opendap</artifactId>
-      <version>2.2</version>
-      <scope>test</scope>
+      <version>4.3.5-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>netcdf</artifactId>
+      <version>4.3.5-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.6.2</version>
     </dependency>
   </dependencies>
   
