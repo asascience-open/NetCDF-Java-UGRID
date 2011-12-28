@@ -4,7 +4,7 @@
 
   <groupId>edu.ucar</groupId>
   <artifactId>NetCDF-Java-UGRID</artifactId>
-  <version>0.3</version>
+  <version>0.1</version>
   <packaging>jar</packaging>
 
   <name>NetCDF-Java-UGRID</name>
@@ -71,6 +71,7 @@
           </execution>
         </executions>
       </plugin>
+      <!--
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <inherited>false</inherited>
@@ -83,12 +84,13 @@
             </goals>
             <configuration>
               <tasks>
-                <copy file="${project.build.directory}/${project.build.finalName}.jar" tofile="C:/Dev/NetCDF/ToolsUI/THREDDS/lib/external/ugrid-${project.version}.jar" overwrite="true" />
+                <copy file="${project.build.directory}/${project.build.finalName}.jar" tofile="PATH_TO_THREDDS_CODE/lib/external/ugrid-${project.version}.jar" overwrite="true" />
               </tasks>
             </configuration>
           </execution>
         </executions>
       </plugin>
+      -->
     </plugins>
   </build>
   
