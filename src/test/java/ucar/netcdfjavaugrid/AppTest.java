@@ -1,4 +1,4 @@
-package edu.ucar.netcdfjavaugrid;
+package ucar.netcdfjavaugrid;
 
 import java.io.IOException;
 import junit.framework.Test;
@@ -9,6 +9,7 @@ import ucar.nc2.constants.FeatureType;
 import ucar.nc2.dt.UGridDataset;
 import ucar.nc2.dt.ugrid.Mesh;
 import ucar.nc2.dt.UGridDataset.Meshset;
+import ucar.nc2.dt.ugrid.MeshVariable;
 import ucar.nc2.dt.ugrid.geom.LatLonPoint2D;
 import ucar.nc2.dt.ugrid.geom.LatLonRectangle2D;
 import ucar.nc2.ft.FeatureDatasetFactoryManager;
@@ -18,9 +19,11 @@ import ucar.unidata.geoloc.LatLonRect;
 /**
  * Unit test for simple App.
  */
-public class AppTest 
-    extends TestCase
+public class AppTest extends TestCase
 {
+  
+    final static String RESOURCE_PATH = "/cases/";
+    
     /**
      * Create the test case
      *
@@ -42,7 +45,9 @@ public class AppTest
     public void testApp()
     {
       CancelTask cancelTask = null;
-      String unstructured = "dods://testbedapps.sura.org/thredds/dodsC/ugrid/TestCases/ELCIRC/elcirc_delt.ncml";
+      
+      String unstructured = AppTest.class.getResource(RESOURCE_PATH + "fvcom/fvcom_delt.ncml").getPath();
+
       try {
         UGridDataset ugrid = (UGridDataset) FeatureDatasetFactoryManager.open(FeatureType.UGRID, unstructured, cancelTask, new Formatter());
         long startTime;
@@ -50,7 +55,7 @@ public class AppTest
         for (Meshset ms : ugrid.getMeshsets()) {
           Mesh m = ms.getMesh();
           System.out.println(m.toString());
-          // We build now, to see how grids compare in index timeUGridDataset ugrid = (UGridDataset) FeatureDatasetFactoryManager.open(FeatureType.UGRID, unstructured, cancelTask, new Formatter());
+          // We build now, to see how grids compare in index time
           System.out.println("Building RTree...");
           startTime = System.currentTimeMillis();
           m.buildRTree();
@@ -58,8 +63,8 @@ public class AppTest
           System.out.println("RTree build took: " + (double) (endTime - startTime) / 1000 + " seconds.");
           System.out.println("RTree contains: " + m.getTreeSize() + " entries.");
 
+          // Skip the point extraction
           /*
-           * Skip the point extraction
           if (m.getTreeSize() > 0) {
             // Query a random point within the bounding box of the Mesh
             LatLonRect bounds = m.getLatLonBoundingBox();
@@ -107,8 +112,9 @@ public class AppTest
           |      |      |
           --------------lr
            */
-          /* 
-           * Skip the variable only subsetting
+          
+          //Skip the variable only subsetting
+          
           if (m.getSize() > 0) {
 
             LatLonRect bounds = m.getLatLonBoundingBox();
@@ -119,17 +125,18 @@ public class AppTest
             
             // Subset the first variable into a new UGridDataset (all in memory)
             Mesh m2;
-            UGridDataset ug2 = ((MeshVariable) ms.getMeshVariables().get(0)).subsetToDataset(h);
+            UGridDataset ug2 = ((MeshVariable) ms.getMeshVariables().get(0)).subsetToSelf(h);
             for (Meshset ms2 : ug2.getMeshsets()) {
               m2 = ms2.getMesh();
               m2.buildRTree();
               System.out.println(m2.toString());
             }
           }
-          */
+          
         }
         
         // Subset the entire UGridDataset
+        
         System.out.println("Subsetting the entire UGridDataset bounding box...");
         Mesh m3 = ugrid.getMeshsets().get(0).getMesh();
         m3.buildRTree();
@@ -145,6 +152,7 @@ public class AppTest
           System.out.println(m4.toString());
         }
         System.out.println("Done");
+         
       } catch (IOException e) {
         System.out.println(e);
       }

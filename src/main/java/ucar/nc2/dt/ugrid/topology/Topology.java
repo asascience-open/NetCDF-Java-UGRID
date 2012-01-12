@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package ucar.nc2.dt.ugrid;
+package ucar.nc2.dt.ugrid.topology;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,25 +18,44 @@ import ucar.nc2.constants.AxisType;
 import ucar.nc2.dataset.CoordinateSystem;
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.dataset.VariableDS;
+import ucar.nc2.dt.ugrid.Cell;
+import ucar.nc2.dt.ugrid.Edge;
+import ucar.nc2.dt.ugrid.Face;
+import ucar.nc2.dt.ugrid.Node;
+import ucar.nc2.dt.ugrid.UGridDataset;
 import ucar.nc2.dt.ugrid.geom.LatLonPoint2D;
 
 /**
  *
  * @author Kyle
  */
-public class ConnectivityVariable {
+public class Topology {
   
   private enum Type {WIDE,TALL};
   private final static String CELL_TYPE = "cell_type";
-  private final static String INDEX_ORIGIN = "index_origin";
+  private final static String INDEX_ORIGIN = "start_index";
   
   private Type type;
   private String cellType = "none";
   private int startIndex = 0;
-  private Variable variable;
+  private Variable face_node_connectivity_variable;
 
-  public ConnectivityVariable(Variable var) {
-    variable = var;
+  public Topology() {
+    
+  }
+  
+  public Topology(Variable var) {
+    face_node_connectivity_variable = var;
+    parse();
+  }
+  
+  public Topology(NetcdfDataset ds, String fullnameescaped) {
+    face_node_connectivity_variable = ds.findVariable(fullnameescaped);
+    parse();
+  }
+  
+  public void setFaceNodeConnectivityVariable(Variable v) {
+    face_node_connectivity_variable = v;
     parse();
   }
   
@@ -46,7 +65,7 @@ public class ConnectivityVariable {
      * For future use of the cell_type attribute
      * "tri_ccw" seems to map to triangles!
      */
-    Attribute cell_type = variable.findAttributeIgnoreCase(CELL_TYPE);
+    Attribute cell_type = face_node_connectivity_variable.findAttributeIgnoreCase(CELL_TYPE);
     if (cell_type != null && !cell_type.getStringValue().isEmpty()) {
       cellType = cell_type.getStringValue();
     }
@@ -54,15 +73,15 @@ public class ConnectivityVariable {
     /*
      * Start Index
      */
-    if (variable.findAttributeIgnoreCase(INDEX_ORIGIN) != null) {
-      startIndex = variable.findAttributeIgnoreCase(INDEX_ORIGIN).getNumericValue().intValue();
+    if (face_node_connectivity_variable.findAttributeIgnoreCase(INDEX_ORIGIN) != null) {
+      startIndex = face_node_connectivity_variable.findAttributeIgnoreCase(INDEX_ORIGIN).getNumericValue().intValue();
     }
     
     /*
      * Connectivity Array
      * There are two types of ways to specify a connectivity array!!
      */
-    if (variable.getDimensions().get(0).getLength() > variable.getDimensions().get(1).getLength()) {
+    if (face_node_connectivity_variable.getDimensions().get(0).getLength() > face_node_connectivity_variable.getDimensions().get(1).getLength()) {
       //  [N0] [1,2,3]
       //  [N1] [4,5,6]
       //  [N2] [2,5,6]
@@ -91,9 +110,9 @@ public class ConnectivityVariable {
         } else if (locations.get(i).equalsIgnoreCase("face")) {
           face_cs = coords.get(i);
         } 
-//        else if (locations.get(i).equalsIgnoreCase("edge")) {
-//          edge_cs = coords.get(i);
-//        }
+        //else if (locations.get(i).equalsIgnoreCase("edge")) {
+        //  edge_cs = coords.get(i);
+        //}
       }
 
       List<Cell> cells = new ArrayList<Cell>();
@@ -102,7 +121,7 @@ public class ConnectivityVariable {
       Edge edge;
       Cell cell;
       int index;
-      int[][] conn_data = (int[][]) variable.read().copyToNDJavaArray();
+      int[][] conn_data = (int[][]) face_node_connectivity_variable.read().copyToNDJavaArray();
       
       double[] face_lats = null;
       double[] face_lons = null;
@@ -179,12 +198,18 @@ public class ConnectivityVariable {
      * We are assuming this is 3 in other parts of the code, but not here.
      */
     String cell_number_dimension_name;
+    Dimension max_cell_size_dim;
     if (this.isTall()) {
-      ncd.addDimension(null, this.variable.getDimension(1));
-      cell_number_dimension_name = variable.getDimension(0).getName();
+      max_cell_size_dim = this.face_node_connectivity_variable.getDimension(1);
+      cell_number_dimension_name = face_node_connectivity_variable.getDimension(0).getName();
     } else {
-      ncd.addDimension(null, this.variable.getDimension(0));
-      cell_number_dimension_name = variable.getDimension(1).getName();
+      max_cell_size_dim = this.face_node_connectivity_variable.getDimension(0);
+      cell_number_dimension_name = face_node_connectivity_variable.getDimension(1).getName();
+    }
+    
+    // Create the dimension representing the max number of cell nodes/edges (3 for triangles)
+    if (ncd.findDimension(max_cell_size_dim.getName()) == null) {
+      max_cell_size_dim = ncd.addDimension(null, max_cell_size_dim);
     }
     ncd.finish();
     
@@ -195,10 +220,13 @@ public class ConnectivityVariable {
     }
     ncd.finish();
     
-    Variable newConn = new VariableDS(ncd, null, null, variable.getShortName(), DataType.INT, variable.getDimensionsString(), null, null);
-    for (Attribute a : (List<Attribute>) variable.getAttributes()) {
+    Variable newConn = new VariableDS(ncd, null, null, face_node_connectivity_variable.getShortName(), DataType.INT, face_node_connectivity_variable.getDimensionsString(), null, null);
+    for (Attribute a : (List<Attribute>) face_node_connectivity_variable.getAttributes()) {
       newConn.addAttribute(a);
     }
+    // When subsetting, we set the start_index to zero.
+    newConn.removeAttributeIgnoreCase("start_index");
+    newConn.addAttribute(new Attribute("start_index", 0));
     ncd.finish();
     
     int[][] raw_data = new int[newConn.getDimension(0).getLength()][newConn.getDimension(1).getLength()];
@@ -211,6 +239,9 @@ public class ConnectivityVariable {
         }
       }
     }
+    
+    // TODO: Reindex the topology here.
+    
     Array conn_data = Array.factory(raw_data);
     newConn.setCachedData(conn_data);
     
@@ -219,7 +250,7 @@ public class ConnectivityVariable {
   }
   
   public VariableDS subsetToVariable(List<Cell> containedCells) {
-    Variable newV = new Variable(variable);
+    Variable newV = new Variable(face_node_connectivity_variable);
     int[][] conn = new int[newV.getShape(0)][newV.getShape(1)];
     int count = 0;
     for (Cell c : containedCells) {
@@ -232,7 +263,9 @@ public class ConnectivityVariable {
       }
       count++;
     }
-
+    // When subsetting, we set the start_index to zero.
+    newV.removeAttributeIgnoreCase("start_index");
+    newV.addAttribute(new Attribute("start_index", 0));
     newV.setCachedData(Array.factory(conn));
 
     return new VariableDS(null, newV, false);
@@ -253,13 +286,8 @@ public class ConnectivityVariable {
 //    return news;
 //  }
   
-  public Variable getVariable() {
-    return variable;
-  }
-
-  public void setVariable(Variable variable) {
-    this.variable = variable;
-    parse();
+  public Variable getFaceNodeConnectivityVariable() {
+    return face_node_connectivity_variable;
   }
   
   public boolean isTall() {

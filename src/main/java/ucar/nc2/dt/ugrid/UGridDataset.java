@@ -58,34 +58,16 @@ import ucar.nc2.dt.ugrid.utils.NcdsFactory;
 import ucar.nc2.dt.ugrid.utils.NcdsFactory.NcdsTemplate;
 
 /**
- * Make a NetcdfDataset into a collection of GeoGrids with Georeferencing coordinate systems.
- * <p/>
- * <p/>
- * A variable will be made into a GeoGrid if it has a Georeferencing coordinate system,
- * using GridCoordSys.isGridCoordSys(), and it has no extra dimensions, ie
- * GridCoordSys.isComplete( var) is true.
- * If it has multiple Georeferencing coordinate systems, any one that is a product set will be given preference.
- * <p/>
- * Example:
- * <p/>
- * <pre>
- * GridDataset gridDs = GridDataset.open (uriString);
- * List grids = gridDs.getGrids();
- * for (int i=0; i&lt;grids.size(); i++) {
- *   GeoGrid grid = (Geogrid) grids.get(i);
- * }
- * </pre>
- *
- * @author caron
- */
+ * Make a UGridDataset into a collection of Meshsets
+*/
 
 public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.FeatureDataset {
   private NetcdfDataset ds;
   private ArrayList<MeshVariable> meshVariables = new ArrayList<MeshVariable>();
   private Map<String, Meshset> meshsetHash = new HashMap<String, Meshset>();
   
-  // "Mesh" is defined by the standard_name "topology_description"
-  private static final String TOPOLOGY_VARIABLE = "topology_description";
+  // A dummy variable defining a Mesh is defined by the standard_name "mesh_topology"
+  private static final String TOPOLOGY_VARIABLE = "mesh_topology";
   
   /**
    * Open a netcdf dataset, using NetcdfDataset.defaultEnhanceMode plus CoordSystems
@@ -95,7 +77,7 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
    * @return GridDataset
    * @throws java.io.IOException on read error
    * @see ucar.nc2.dataset.NetcdfDataset#acquireDataset
-   */
+   */ 
   static public UGridDataset open(String location) throws java.io.IOException {
     return open(location, NetcdfDataset.getDefaultEnhanceMode());
   }
@@ -375,8 +357,8 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
       for (Attribute a : this.getGlobalAttributes()){
         ncd.addAttribute(null, a);
       }
-      ncd.addAttribute(null, new Attribute("History", "Subset by NetCDF-Java Library; Translation date = " + new Date() + ";"));
-     
+      ncd.addAttribute(null, new Attribute("History", "Subset by NetCDF-Java UGRID Library; Translation date = " + new Date() + ";"));
+      
       Mesh m4;
       LatLonRectangle2D r = new LatLonRectangle2D(new LatLonPoint2D.Double(bounds.getUpperLeftPoint().getLatitude(), bounds.getUpperLeftPoint().getLongitude()), new LatLonPoint2D.Double(bounds.getLowerRightPoint().getLatitude(), bounds.getLowerRightPoint().getLongitude()));
       LatLonPolygon2D p = new LatLonPolygon2D.Double(r);
@@ -389,9 +371,9 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
         containedCells = m4.getCellsInPolygon(p);
            
         /*
-         * Create the subsat ConnectivityVariable
+         * Create the subsat Topology
          */
-        m4.getConnectivityVariable().subsetToDataset(this, ncd, containedCells);
+        m4.getTopology().subsetToDataset(this, ncd, containedCells);
         
         /*
          * MeshVariables which are on this Meshset
@@ -401,8 +383,31 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
           ((MeshVariable)mv).subsetToDataset(this, ncd, containedCells);
         }
       }
-      
       ncd.finish();
+      
+      // Coordinate Systems
+      for (CoordinateSystem cs : this.getNetcdfDataset().getCoordinateSystems()) {
+        for (Dimension d : cs.getDomain()) {
+          if (ncd.findDimension(d.getName()) == null) {
+            ncd.addDimension(null, d);
+            Variable vd = this.getNetcdfDataset().findVariable(d.getName());
+            if (vd == null) {
+              ncd.addVariable(null, new VariableDS(null, vd, true));
+            }
+          }
+          ncd.finish();
+        }
+        ncd.addCoordinateSystem(cs);
+        ncd.finish();
+      }
+
+      // Coordinate Axes
+      for (CoordinateAxis ax : this.getNetcdfDataset().getCoordinateAxes()) {
+        if (ncd.findCoordinateAxis(ax.getFullNameEscaped()) == null) {
+          ncd.addCoordinateAxis(ax);
+          ncd.finish();
+        }
+      }
       
       return new UGridDataset(ncd);
     } catch (URISyntaxException e) {

@@ -4,6 +4,7 @@
  */
 package ucar.nc2.dt.ugrid;
 
+import ucar.nc2.dt.ugrid.topology.Topology;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -67,8 +68,8 @@ public class MeshVariable implements UGridDatatype {
     return vs.getFullNameEscaped();
   }
 
-  public ConnectivityVariable getConnectivityVariable() {
-    return (ConnectivityVariable) meshset.getMesh().getConnectivityVariable();
+  public Topology getConnectivityVariable() {
+    return (Topology) meshset.getMesh().getTopology();
   }
 
   public String getDescription() {
@@ -271,6 +272,7 @@ public class MeshVariable implements UGridDatatype {
      * Add all coordinate axis that this MeshVariable uses (ie. lat, lon, depth, time)
      * Only add them if they don't exists.
      * Need to subset the lat and lon variables.
+     * The Topology is already subsat, but not reindexed.
      */
     
     try {
@@ -286,7 +288,7 @@ public class MeshVariable implements UGridDatatype {
          */
         if (cs.hasTimeAxis()) {
           VariableDS t;
-          if (ncd.findCoordinateAxis(cs.getTaxis().getName()) == null) {
+          if (ncd.findCoordinateAxis(cs.getTaxis().getFullNameEscaped()) == null) {
             ncd.addCoordinateSystem(cs);
             ncd.addCoordinateAxis(cs.getTaxis());
             t = new VariableDS(null, cs.getTaxis().getOriginalVariable(), true);
@@ -303,7 +305,7 @@ public class MeshVariable implements UGridDatatype {
         if (cs.hasVerticalAxis()) {
           VariableDS z;
           if (cs.getZaxis() != null) {
-            if (ncd.findCoordinateAxis(cs.getZaxis().getName()) == null) {
+            if (ncd.findCoordinateAxis(cs.getZaxis().getFullNameEscaped()) == null) {
               ncd.addCoordinateSystem(cs);
               ncd.addCoordinateAxis(cs.getZaxis());
               z = new VariableDS(null, cs.getZaxis().getOriginalVariable(), true);
@@ -314,7 +316,7 @@ public class MeshVariable implements UGridDatatype {
             z_length = vs.getDimension(z_index).getLength();
           }
           if (cs.getHeightAxis() != null) {
-            if (ncd.findCoordinateAxis(cs.getHeightAxis().getName()) == null) {
+            if (ncd.findCoordinateAxis(cs.getHeightAxis().getFullNameEscaped()) == null) {
               ncd.addCoordinateSystem(cs);
               ncd.addCoordinateAxis(cs.getHeightAxis());
               z = new VariableDS(null, cs.getHeightAxis().getOriginalVariable(), true);
@@ -325,7 +327,7 @@ public class MeshVariable implements UGridDatatype {
             z_length = vs.getDimension(z_index).getLength();
           }
           if (cs.getPressureAxis() != null) {
-            if (ncd.findCoordinateAxis(cs.getPressureAxis().getName()) == null) {
+            if (ncd.findCoordinateAxis(cs.getPressureAxis().getFullNameEscaped()) == null) {
               ncd.addCoordinateSystem(cs);
               ncd.addCoordinateAxis(cs.getPressureAxis());
               z = new VariableDS(null, cs.getPressureAxis().getOriginalVariable(), true);
@@ -394,18 +396,30 @@ public class MeshVariable implements UGridDatatype {
       }
       
       /*
-       * Now add this actually MeshVariable, now that the file has 
+       * Now add this actual MeshVariable, now that the file has 
        * been set up with the correct Dimensions.
+       * TODO: Subset this variable.
+       * 
+       * Options:
+       *   1.)  Iterate over the containedCells.get(i).getNodes().get(j).getDataIndex()
+       *        and slice out each data index from this variable into a new variable.
+       *        Update the topology with the new data index.
+       *   2.)  Get the min and max data indexes from the topology and only
+       *        reindex that section of the data variables.  Don't have to take
+       *        individual slices from the data variable doing it this way, but
+       *        still need to reindex the topology.
+       *   3.)  Set the unused data indexes to its FillValue
        */
-      Variable newVar = ncd.findVariable(vs.getFullName());
+      
+      Variable newVar = ncd.findVariable(vs.getFullNameEscaped());
       if (newVar == null) {
         newVar = new VariableDS(ugd.getNetcdfDataset(), null, null, vs.getShortName(), vs.getDataType(), vs.getDimensionsString(), vs.getUnitsString(), vs.getDescription());
         for (Attribute a : (List<Attribute>) vs.getAttributes()) {
           newVar.addAttribute(a);
         }
+        ncd.addVariable(null, newVar);
+        ncd.finish();
       }
-      ncd.addVariable(null, newVar);
-      ncd.finish();
       
       ArrayList<Range> r = new ArrayList<Range>();
       // Time

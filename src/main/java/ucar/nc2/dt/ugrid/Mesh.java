@@ -4,10 +4,10 @@
  */
 package ucar.nc2.dt.ugrid;
 
+import ucar.nc2.dt.ugrid.topology.Topology;
 import cern.colt.list.IntArrayList;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -34,68 +34,82 @@ public class Mesh {
   private RTree rtree;
   private List<Cell> cells = new ArrayList<Cell>();
   // A Mesh should only have one connectivity array!
-  private ConnectivityVariable connectivity_variable;
-  private List<String> locations;
+  private Topology topology = new Topology();
   private List<CoordinateSystem> coordinate_systems = new ArrayList<CoordinateSystem>();
   
-  // Standards
-  private final static String LOCATIONS_ATTRIBUTE = "locations";
-  private final static String COORDINATES = "coordinates";
-  private final static String CONNECTIVITY = "connectivity";
+  // Standards (required)
+  private final static String DIMENSION = "dimension";
+  private final static String NODE_COORDINATES = "node_coordinates";
+  private final static String FACE_COORDINATES = "face_coordinates";
+  private final static String FACE_NODE_CONNECTIVITY = "face_node_connectivity";
 
   public Mesh(NetcdfDataset ds, VariableEnhanced v) {
-    name = v.getName();
+    name = v.getFullNameEscaped();
 
     Properties props = new Properties();
     props.setProperty("MaxNodeEntries", "30");
     props.setProperty("MinNodeEntries", "15");
     rtree = new RTree(props);
 
-    processConnectivityVariables(ds, v);
+    processTopologyVariable(ds, v);
   }
 
-  private void processConnectivityVariables(NetcdfDataset ncd, VariableEnhanced v) {
-    ArrayList<Attribute> foundCoords;
+  private void processTopologyVariable(NetcdfDataset ncd, VariableEnhanced v) {
+    ArrayList<Attribute> foundCoords = new ArrayList<Attribute>();
+    ArrayList<String> locations = new ArrayList<String>();
     Attribute att = null;
-    if (v.findAttributeIgnoreCase(LOCATIONS_ATTRIBUTE) != null) {
-      String[] refs = v.findAttributeIgnoreCase(LOCATIONS_ATTRIBUTE).getStringValue().split(" ");
-      foundCoords = new ArrayList<Attribute>(refs.length);
-      locations = new ArrayList<String>(refs.length);
-      Attribute conn = null;
-      Variable connection_variable;
-      connectivity_variable = null;
-      for (String prefix : refs) {
-        att = v.findAttributeIgnoreCase(prefix + "_" + COORDINATES);
-        conn = v.findAttributeIgnoreCase(prefix + "_" + CONNECTIVITY);
-        if (att != null && conn != null && !att.getStringValue().isEmpty() && !conn.getStringValue().isEmpty()) {
-          connection_variable = ncd.findVariable(conn.getStringValue());
-          // Add support for "edge" cases where connectivity gives the edges,
-          // and there is another map to the nodes.
-          if (prefix.equalsIgnoreCase("node") && connectivity_variable == null) {
-            connectivity_variable = new ConnectivityVariable(connection_variable);
-          }
-          locations.add(prefix);
-          foundCoords.add(att);
-        } else {
-          System.out.println("Could not find coordinate and connectivity information for this Mesh.");
-        }
-      }
 
-      String attString;
-      findCoord : for (Attribute attr : foundCoords) {
-        attString = attr.getStringValue().toLowerCase();
-        for (CoordinateSystem coord : ncd.getCoordinateSystems()) {
+    Attribute dims = v.findAttributeIgnoreCase(DIMENSION);
+    if ( dims == null ) {
+      System.out.println("No '" + DIMENSION + "' attribute defined for the Mesh");
+      return;
+    }
+      
+    Attribute node_coord = v.findAttributeIgnoreCase(NODE_COORDINATES);
+    if ( node_coord == null ) {
+      System.out.println("No '" + NODE_COORDINATES + "' attribute defined for the Mesh");
+      return;
+    } else {
+      foundCoords.add(node_coord);
+      locations.add("node");
+    }
+    
+    Attribute face_coord = v.findAttributeIgnoreCase(FACE_COORDINATES);
+    if ( node_coord == null ) {
+      System.out.println("No '" + FACE_COORDINATES + "' attribute defined for the Mesh");
+      return;
+    } else {
+      foundCoords.add(face_coord);
+      locations.add("face");
+    }
+    
+    Attribute face_node_connect = v.findAttributeIgnoreCase(FACE_NODE_CONNECTIVITY);
+    if ( face_node_connect == null ) {
+      System.out.println("No '" + FACE_NODE_CONNECTIVITY + "' attribute defined for the Mesh. Only 2D and 3D supported.");
+      return;   
+    } else {
+      topology.setFaceNodeConnectivityVariable(ncd.findVariable(face_node_connect.getStringValue()));
+    }
+    
+    // TODO: Support face/edge coordinates
+    // TODO: Support face_face/face_edge/edge_node connectivities
+
+    String attString;
+    findCoord : for (Attribute attr : foundCoords) {
+      attString = attr.getStringValue().toLowerCase();
+      for (CoordinateSystem coord : ncd.getCoordinateSystems()) {
+        try {
           if (attString.contains(coord.getLatAxis().getShortName()) &&
                   attString.contains(coord.getLonAxis().getShortName())) {
             coordinate_systems.add(coord);
             break;
           }
+        } catch(Exception e) {
+          continue;
         }
       }
-      cells = getConnectivityVariable().createCells(locations, coordinate_systems);
-    } else {
-      System.out.println("No 'locations' attribute on the Mesh.");
     }
+    cells = topology.createCells(locations, coordinate_systems);
   }
 
   public void buildRTree() {
@@ -234,8 +248,8 @@ public class Mesh {
     return cells;
   }
 
-  public ConnectivityVariable getConnectivityVariable() {
-    return connectivity_variable;
+  public Topology getTopology() {
+    return topology;
   }
 
   public Mesh subset(LatLonRect bounds) {
