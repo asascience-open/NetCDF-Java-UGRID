@@ -13,12 +13,30 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
+  
+  <repositories>
+      <repository>
+          <id>unidata-releases</id>
+          <url>https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases</url>
+      </repository>
+  </repositories>
+
+  <dependencyManagement>
+	<dependencies>
+      <dependency>
+        <groupId>edu.ucar</groupId>
+        <artifactId>thredds-parent</artifactId>
+        <version>4.3.16</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -29,23 +47,19 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
-      <version>1.6.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>edu.ucar</groupId>
       <artifactId>opendap</artifactId>
-      <version>4.3.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>edu.ucar</groupId>
       <artifactId>netcdf</artifactId>
-      <version>4.3.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.6.2</version>
     </dependency>
   </dependencies>
   
