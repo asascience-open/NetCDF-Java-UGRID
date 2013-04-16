@@ -305,8 +305,8 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
     }
   }
 
-  public boolean sync() throws IOException {
-    return (ds != null) ? ds.sync() : false;
+  public boolean syncExtend() throws IOException {
+    return (ds != null) ? ds.syncExtend() : false;
   }
 
   protected FileCache fileCache;
@@ -430,6 +430,10 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
 
   public CalendarDate getCalendarDateEnd() {
     throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  public long getLastModified() {
+      return ds == null ? 0 : ds.getLastModified();
   }
 
   /**
