@@ -38,7 +38,7 @@ public class Mesh {
   private List<CoordinateSystem> coordinate_systems = new ArrayList<CoordinateSystem>();
   
   // Standards (required)
-  private final static String DIMENSION = "dimension";
+  private final static String DIMENSION = "topology_dimension";
   private final static String NODE_COORDINATES = "node_coordinates";
   private final static String FACE_COORDINATES = "face_coordinates";
   private final static String FACE_NODE_CONNECTIVITY = "face_node_connectivity";

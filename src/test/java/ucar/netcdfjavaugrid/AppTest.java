@@ -9,6 +9,7 @@ import ucar.nc2.constants.FeatureType;
 import ucar.nc2.dt.UGridDataset;
 import ucar.nc2.dt.ugrid.Mesh;
 import ucar.nc2.dt.UGridDataset.Meshset;
+import ucar.nc2.dt.UGridDatatype;
 import ucar.nc2.dt.ugrid.MeshVariable;
 import ucar.nc2.dt.ugrid.geom.LatLonPoint2D;
 import ucar.nc2.dt.ugrid.geom.LatLonRectangle2D;
@@ -47,6 +48,8 @@ public class AppTest extends TestCase
       CancelTask cancelTask = null;
       
       String unstructured = AppTest.class.getResource(RESOURCE_PATH + "fvcom/fvcom_delt.ncml").getPath();
+      //String unstructured = "http://www.smast.umassd.edu:8080/thredds/dodsC/fvcom/hindcasts/30yr_gom3/mean";
+      
 
       try {
         UGridDataset ugrid = (UGridDataset) FeatureDatasetFactoryManager.open(FeatureType.UGRID, unstructured, cancelTask, new Formatter());
@@ -56,12 +59,12 @@ public class AppTest extends TestCase
           Mesh m = ms.getMesh();
           System.out.println(m.toString());
           // We build now, to see how grids compare in index time
-          System.out.println("Building RTree...");
+          //System.out.println("Building RTree...");
           startTime = System.currentTimeMillis();
           m.buildRTree();
           endTime = System.currentTimeMillis();
-          System.out.println("RTree build took: " + (double) (endTime - startTime) / 1000 + " seconds.");
-          System.out.println("RTree contains: " + m.getTreeSize() + " entries.");
+          //System.out.println("RTree build took: " + (double) (endTime - startTime) / 1000 + " seconds.");
+          //System.out.println("RTree contains: " + m.getTreeSize() + " entries.");
 
           // Skip the point extraction
           /*
@@ -112,9 +115,10 @@ public class AppTest extends TestCase
           |      |      |
           --------------lr
            */
+                   
           
-          //Skip the variable only subsetting
-          
+          /* Skip variable level subsetting */
+          /*
           if (m.getSize() > 0) {
 
             LatLonRect bounds = m.getLatLonBoundingBox();
@@ -124,15 +128,15 @@ public class AppTest extends TestCase
             System.out.println("Subsetting the top left corner of bounding box...");
             
             // Subset the first variable into a new UGridDataset (all in memory)
-            Mesh m2;
-            UGridDataset ug2 = ((MeshVariable) ms.getMeshVariables().get(0)).subsetToSelf(h);
-            for (Meshset ms2 : ug2.getMeshsets()) {
-              m2 = ms2.getMesh();
-              m2.buildRTree();
-              System.out.println(m2.toString());
-            }
+            MeshVariable var = (MeshVariable)ms.getMeshVariables().get(0);
+            System.out.println("Subsetting: " + var.getName());
+            UGridDataset ug2 = var.subsetToSelf(h);
+            //assert (ug2.getMeshVariables().size() > 0);
+            Mesh m2 = ug2.getMeshVariableByName(var.getName()).getMeshset().getMesh();
+            m2.buildRTree();
+            System.out.println(m2.toString());
           }
-          
+          */
         }
         
         // Subset the entire UGridDataset

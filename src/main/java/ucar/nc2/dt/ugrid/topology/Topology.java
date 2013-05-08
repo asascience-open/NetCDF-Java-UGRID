@@ -208,7 +208,7 @@ public class Topology {
     }
     
     // Create the dimension representing the max number of cell nodes/edges (3 for triangles)
-    if (ncd.findDimension(max_cell_size_dim.getName()) == null) {
+    if (ncd.findDimension(max_cell_size_dim.getFullName()) == null) {
       max_cell_size_dim = ncd.addDimension(null, max_cell_size_dim);
     }
     ncd.finish();

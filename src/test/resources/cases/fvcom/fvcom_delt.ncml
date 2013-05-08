@@ -132,41 +132,41 @@
     </variable>
     
     <variable name="Mesh1" type="int">
-        <attribute name="standard_name" value="mesh_topology"/>
+        <attribute name="cf_role" value="mesh_topology"/>
         <attribute name="long_name" value="Topology data of 2D unstructured mesh (Mesh1)"/>
-        <attribute name="dimension" type="short" value="2"/>
+        <attribute name="topology_dimension" type="short" value="2"/>
         <attribute name="node_coordinates" value="lat_node lon_node"/>
         <attribute name="face_node_connectivity" value="connectivity_Mesh1"/>
         <attribute name="face_coordinates" value="lat_face lon_face "/>
     </variable>
     <variable name="Mesh2" type="int">
-        <attribute name="standard_name" value="mesh_topology"/>
+        <attribute name="cf_role" value="mesh_topology"/>
         <attribute name="long_name" value="Topology data of 2D unstructured mesh (Mesh2)"/>
-        <attribute name="dimension" type="short" value="2"/>
+        <attribute name="topology_dimension" type="short" value="2"/>
         <attribute name="node_coordinates" value="h lat_node lon_node"/>
         <attribute name="face_node_connectivity" value="connectivity_with_height_Mesh2" />
         <attribute name="face_coordinates" value="h_center lat_face lon_face"/>
     </variable>
     <variable name="Mesh3" type="int">
-        <attribute name="standard_name" value="mesh_topology"/>
+        <attribute name="cf_role" value="mesh_topology"/>
         <attribute name="long_name" value="Topology data of 2D unstructured mesh (Mesh3)"/>
-        <attribute name="dimension" type="short" value="2"/>
+        <attribute name="topology_dimension" type="short" value="2"/>
         <attribute name="node_coordinates" value="zeta lat_node lon_node"/>
         <attribute name="face_node_connectivity" value="connectivity_with_depth_Mesh3" />
         <attribute name="face_coordinates" value="zeta_center lat_face lon_face"/>
     </variable>
     <variable name="Mesh4" type="int">
-        <attribute name="standard_name" value="mesh_topology"/>
+        <attribute name="cf_role" value="mesh_topology"/>
         <attribute name="long_name" value="Topology data of 2D unstructured mesh (Mesh4)"/>
-        <attribute name="dimension" type="short" value="2"/>
+        <attribute name="topology_dimension" type="short" value="2"/>
         <attribute name="node_coordinates" value="siglay lat_node lon_node"/>
         <attribute name="face_node_connectivity" value="connectivity_with_siglay_Mesh4" />
         <attribute name="face_coordinates" value="siglay_center lat_face lon_face"/>
     </variable>
     <variable name="Mesh5" type="int">
-        <attribute name="standard_name" value="mesh_topology"/>
+        <attribute name="cf_role" value="mesh_topology"/>
         <attribute name="long_name" value="Topology data of 2D unstructured mesh (Mesh5)"/>
-        <attribute name="dimension" type="short" value="2"/>
+        <attribute name="topology_dimension" type="short" value="2"/>
         <attribute name="node_coordinates" value="siglev lat_node lon_node"/>
         <attribute name="face_node_connectivity" value="connectivity_with_siglev_Mesh5" />
         <attribute name="face_coordinates" value="siglev_center lat_face lon_face"/>
@@ -174,28 +174,28 @@
     
     <!-- Grids -->
     <variable name="connectivity_Mesh1" orgName="grid1">
-        <attribute name="standard_name" value="face_node_connectivity" />
+        <attribute name="cf_role" value="face_node_connectivity" />
         <remove type="attribute" name="coordinates_node"/>
         <remove type="attribute" name="index_start"/>
         <attribute name="long_name" value="Maps every face to its corner nodes, counter-clockwise"/>
         <attribute name="start_index" type="short" value="1"/>
     </variable>
     <variable name="connectivity_with_height_Mesh2" orgName="grid2">
-        <attribute name="standard_name" value="face_node_connectivity" />
+        <attribute name="cf_role" value="face_node_connectivity" />
         <remove type="attribute" name="coordinates_node"/>
         <attribute name="long_name" value="Maps every face to its corner nodes, counter-clockwise, with respect to Height (Zeta)"/>
         <remove type="attribute" name="index_start"/>
         <attribute name="start_index" type="short" value="1"/>
     </variable>
     <variable name="connectivity_with_depth_Mesh3" orgName="grid3">
-        <attribute name="standard_name" value="face_node_connectivity" />
+        <attribute name="cf_role" value="face_node_connectivity" />
         <remove type="attribute" name="coordinates_node"/>
         <attribute name="long_name" value="Maps every face to its corner nodes, counter-clockwise, with respect to Depth (H)"/>
         <remove type="attribute" name="index_start"/>
         <attribute name="start_index" type="short" value="1"/>
     </variable>
     <variable name="connectivity_with_siglay_Mesh4" orgName="grid4">
-        <attribute name="standard_name" value="face_node_connectivity" />
+        <attribute name="cf_role" value="face_node_connectivity" />
         <remove type="attribute" name="coordinates_node"/>
         <remove type="attribute" name="coordinates_cell"/>
         <attribute name="long_name" value="Maps every face to its corner nodes, counter-clockwise, with respect to Sigma Layer (SigLay)"/>
@@ -203,7 +203,7 @@
         <attribute name="start_index" type="short" value="1"/>
     </variable>
     <variable name="connectivity_with_siglev_Mesh5" orgName="grid5">
-        <attribute name="standard_name" value="face_node_connectivity" />
+        <attribute name="cf_role" value="face_node_connectivity" />
         <remove type="attribute" name="coordinates_node"/>
         <remove type="attribute" name="coordinates_cell"/>
         <attribute name="long_name" value="Maps every face to its corner nodes, counter-clockwise, with respect to Sigma Level (SigLev)"/>

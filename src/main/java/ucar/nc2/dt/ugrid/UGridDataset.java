@@ -66,7 +66,7 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
   private ArrayList<MeshVariable> meshVariables = new ArrayList<MeshVariable>();
   private Map<String, Meshset> meshsetHash = new HashMap<String, Meshset>();
   
-  // A dummy variable defining a Mesh is defined by the standard_name "mesh_topology"
+  // A dummy variable defining a Mesh is defined by the cf_role "mesh_topology"
   private static final String TOPOLOGY_VARIABLE = "mesh_topology";
   
   /**
@@ -122,7 +122,7 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
     List<Variable> vars = ds.getVariables();
     for (Variable var : vars) {
       // See how many "Mesh" are defined in the dataset
-      if ((var.findAttributeIgnoreCase(CF.STANDARD_NAME)) != null && (var.findAttributeIgnoreCase(CF.STANDARD_NAME).getStringValue().equals(TOPOLOGY_VARIABLE))) {
+      if ((var.findAttributeIgnoreCase(CF.CF_ROLE)) != null && (var.findAttributeIgnoreCase(CF.CF_ROLE).getStringValue().equals(TOPOLOGY_VARIABLE))) {
         VariableEnhanced varDS = (VariableEnhanced) var;
         constructMeshVariable(ds, varDS, parseInfo);
       }
@@ -388,9 +388,9 @@ public class UGridDataset implements ucar.nc2.dt.UGridDataset, ucar.nc2.ft.Featu
       // Coordinate Systems
       for (CoordinateSystem cs : this.getNetcdfDataset().getCoordinateSystems()) {
         for (Dimension d : cs.getDomain()) {
-          if (ncd.findDimension(d.getName()) == null) {
+          if (ncd.findDimension(d.getFullName()) == null) {
             ncd.addDimension(null, d);
-            Variable vd = this.getNetcdfDataset().findVariable(d.getName());
+            Variable vd = this.getNetcdfDataset().findVariable(d.getFullName());
             if (vd == null) {
               ncd.addVariable(null, new VariableDS(null, vd, true));
             }
