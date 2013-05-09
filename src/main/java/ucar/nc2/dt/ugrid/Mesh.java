@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.Arrays;
 import ucar.nc2.Attribute;
 import ucar.nc2.Variable;
 import ucar.nc2.dataset.CoordinateSystem;
@@ -75,7 +76,7 @@ public class Mesh {
     }
     
     Attribute face_coord = v.findAttributeIgnoreCase(FACE_COORDINATES);
-    if ( node_coord == null ) {
+    if ( face_coord == null ) {
       System.out.println("No '" + FACE_COORDINATES + "' attribute defined for the Mesh");
       return;
     } else {
@@ -96,11 +97,11 @@ public class Mesh {
 
     String attString;
     findCoord : for (Attribute attr : foundCoords) {
-      attString = attr.getStringValue().toLowerCase();
+      List<String> elements = (List<String>)Arrays.asList(attr.getStringValue().toLowerCase().split((" ")));
       for (CoordinateSystem coord : ncd.getCoordinateSystems()) {
         try {
-          if (attString.contains(coord.getLatAxis().getShortName()) &&
-                  attString.contains(coord.getLonAxis().getShortName())) {
+          if (elements.contains(coord.getLatAxis().getShortName()) &&
+                  elements.contains(coord.getLonAxis().getShortName())) {
             coordinate_systems.add(coord);
             break;
           }
