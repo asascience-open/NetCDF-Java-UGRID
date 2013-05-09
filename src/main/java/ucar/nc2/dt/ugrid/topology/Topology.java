@@ -201,10 +201,10 @@ public class Topology {
     Dimension max_cell_size_dim;
     if (this.isTall()) {
       max_cell_size_dim = this.face_node_connectivity_variable.getDimension(1);
-      cell_number_dimension_name = face_node_connectivity_variable.getDimension(0).getName();
+      cell_number_dimension_name = face_node_connectivity_variable.getDimension(0).getFullName();
     } else {
       max_cell_size_dim = this.face_node_connectivity_variable.getDimension(0);
-      cell_number_dimension_name = face_node_connectivity_variable.getDimension(1).getName();
+      cell_number_dimension_name = face_node_connectivity_variable.getDimension(1).getFullName();
     }
     
     // Create the dimension representing the max number of cell nodes/edges (3 for triangles)
@@ -214,9 +214,13 @@ public class Topology {
     ncd.finish();
     
     // Create cell_dim of correct size if it does not exist
+    
+    Set set = new HashSet(containedCells);
+    ArrayList<Cell> unique_cells = new ArrayList<Cell>(set);
+    
     Dimension cell_dim = ncd.findDimension(cell_number_dimension_name);
     if (cell_dim == null) {
-      cell_dim = ncd.addDimension(null, new Dimension(cell_number_dimension_name, containedCells.size()));
+      cell_dim = ncd.addDimension(null, new Dimension(cell_number_dimension_name, unique_cells.size()));
     }
     ncd.finish();
     
@@ -230,18 +234,17 @@ public class Topology {
     ncd.finish();
     
     int[][] raw_data = new int[newConn.getDimension(0).getLength()][newConn.getDimension(1).getLength()];
-    for (int i = 0 ; i < containedCells.size() ; i++) {
-      for (int j = 0 ; j < containedCells.get(i).getNodes().size() ; j++) {
+    for (int i = 0 ; i < unique_cells.size() ; i++) {
+      for (int j = 0 ; j < unique_cells.get(i).getNodes().size() ; j++) {
         if (this.isTall()) {
-          raw_data[i][j] = containedCells.get(i).getNodes().get(j).getDataIndex();
+          raw_data[i][j] = unique_cells.get(i).getNodes().get(j).getDataIndex();
         } else {
-          raw_data[j][i] = containedCells.get(i).getNodes().get(j).getDataIndex();
+          raw_data[j][i] = unique_cells.get(i).getNodes().get(j).getDataIndex();
         }
       }
     }
     
     // TODO: Reindex the topology here.
-    
     Array conn_data = Array.factory(raw_data);
     newConn.setCachedData(conn_data);
     
