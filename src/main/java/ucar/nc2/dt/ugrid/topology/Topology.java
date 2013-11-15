@@ -123,16 +123,20 @@ public class Topology {
       int index;
       Object data = face_node_connectivity_variable.read().copyToNDJavaArray();
       int[][] conn_data;
-      if (a instance of int[][]) {
+      if (data instanceof int[][]) {
         conn_data = (int[][]) data;
-      }
-      else {
-        log.warn("The connectivity Variable, " + 
-          face_node_connectivity_variable.getName() + 
-          ", should be an int[][], however it was a " +
-          data.getClass().getName() + 
-          ". We're converting it for you but it's much slower than using int[][]");
+      }  else {
+ /*        log.warn("The connectivity Variable, " + 
+         face_node_connectivity_variable.getName() + 
+         ", should be an int[][], however it was a " +
+         data.getClass().getName() + 
+         ". We're converting it for you but it's much slower than using int[][]");
        // Can't cast. Do array conversion to int[][]. 
+       */
+         for (int i = 0 ; i < data.length; i++)
+          {
+             conn_data[i] = (int) data[i];
+          }
       }
       
       double[] face_lats = null;
