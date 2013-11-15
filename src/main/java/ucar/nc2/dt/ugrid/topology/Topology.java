@@ -121,7 +121,19 @@ public class Topology {
       Edge edge;
       Cell cell;
       int index;
-      int[][] conn_data = (int[][]) face_node_connectivity_variable.read().copyToNDJavaArray();
+      Object data = face_node_connectivity_variable.read().copyToNDJavaArray();
+      int[][] conn_data;
+      if (a instance of int[][]) {
+        conn_data = (int[][]) data;
+      }
+      else {
+        log.warn("The connectivity Variable, " + 
+          face_node_connectivity_variable.getName() + 
+          ", should be an int[][], however it was a " +
+          data.getClass().getName() + 
+          ". We're converting it for you but it's much slower than using int[][]");
+       // Can't cast. Do array conversion to int[][]. 
+      }
       
       double[] face_lats = null;
       double[] face_lons = null;
