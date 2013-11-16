@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Set;
 import ucar.ma2.Array;
 import ucar.ma2.DataType;
+import ucar.ma2.Index;
+import ucar.ma2.MAMath;
 import ucar.nc2.Attribute;
 import ucar.nc2.Dimension;
 import ucar.nc2.Variable;
@@ -121,24 +123,11 @@ public class Topology {
       Edge edge;
       Cell cell;
       int index;
-      Object data = face_node_connectivity_variable.read().copyToNDJavaArray();
-      int[][] conn_data;
-      if (data instanceof int[][]) {
-        conn_data = (int[][]) data;
-      }  else {
- /*        log.warn("The connectivity Variable, " + 
-         face_node_connectivity_variable.getName() + 
-         ", should be an int[][], however it was a " +
-         data.getClass().getName() + 
-         ". We're converting it for you but it's much slower than using int[][]");
-       // Can't cast. Do array conversion to int[][]. 
-       */
-         for (int i = 0 ; i < data.length; i++)
-          {
-             conn_data[i] = (int) data[i];
-          }
-      }
-      
+
+      Array arr = face_node_connectivity_variable.read();
+      Array arri = MAMath.convert(arr, DataType.INT);
+      int[][] conn_data = (int[][]) arri.copyToNDJavaArray();
+ 
       double[] face_lats = null;
       double[] face_lons = null;
       ArrayList<Face> unique_faces = null;
