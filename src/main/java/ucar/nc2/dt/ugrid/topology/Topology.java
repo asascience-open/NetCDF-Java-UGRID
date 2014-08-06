@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Set;
 import ucar.ma2.Array;
 import ucar.ma2.DataType;
+import ucar.ma2.Index;
+import ucar.ma2.MAMath;
 import ucar.nc2.Attribute;
 import ucar.nc2.Dimension;
 import ucar.nc2.Variable;
@@ -121,8 +123,11 @@ public class Topology {
       Edge edge;
       Cell cell;
       int index;
-      int[][] conn_data = (int[][]) face_node_connectivity_variable.read().copyToNDJavaArray();
-      
+
+      Array arr = face_node_connectivity_variable.read();
+      Array arri = MAMath.convert(arr, DataType.INT);
+      int[][] conn_data = (int[][]) arri.copyToNDJavaArray();
+ 
       double[] face_lats = null;
       double[] face_lons = null;
       ArrayList<Face> unique_faces = null;
